@@ -58,22 +58,20 @@ public class Encryption {
 
 			JcePublicKeyKeyEncryptionMethodGenerator keyEncryptionMethod = new JcePublicKeyKeyEncryptionMethodGenerator(
 					getPublicKey(publicKeyIn));
-			
+
 			pgpEncryptedDataGenerator.addMethod(keyEncryptionMethod);
-			
+
 			if (armor) {
-	            encryptOut = new ArmoredOutputStream(encryptOut);
-	        }
-			System.out.println(bufferSize);
+				encryptOut = new ArmoredOutputStream(encryptOut);
+			}
 			OutputStream cipherOutStream = pgpEncryptedDataGenerator.open(encryptOut, new byte[bufferSize]);
-			
+
 			copyAsLiteralData(compressedDataGenerator.open(cipherOutStream), clearIn, length, bufferSize);
-			
+
 			compressedDataGenerator.close();
-	        cipherOutStream.close();
-	        encryptOut.close();
-			
-			
+			cipherOutStream.close();
+			encryptOut.close();
+
 		} catch (IOException | PGPException e) {
 
 			e.printStackTrace();
@@ -103,26 +101,27 @@ public class Encryption {
 		}
 		return Optional.empty();
 	}
-	
-	public void copyAsLiteralData(OutputStream outputStream, InputStream in, long length, int bufferSize) throws IOException {
-        PGPLiteralDataGenerator lData = new PGPLiteralDataGenerator();
-        OutputStream pOut = lData.open(outputStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE,
-                Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)), new byte[bufferSize]);
-        byte[] buff = new byte[bufferSize];
-        try {
-            int len;
-            long totalBytesWritten = 0L;
-            while (totalBytesWritten <= length && (len = in.read(buff)) > 0) {
-                pOut.write(buff, 0, len);
-                totalBytesWritten += len;
-            }
-            pOut.close();
-        } finally {
-            // Clearing buffer
-            Arrays.fill(buff, (byte) 0);
-            // Closing inputstream
-            in.close();
-        }
-    }
+
+	public void copyAsLiteralData(OutputStream outputStream, InputStream in, long length, int bufferSize)
+			throws IOException {
+		PGPLiteralDataGenerator lData = new PGPLiteralDataGenerator();
+
+		byte[] buff = new byte[bufferSize];
+		try (OutputStream pOut = lData.open(outputStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE,
+				Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)), new byte[bufferSize]);) {
+			int len;
+			long totalBytesWritten = 0L;
+			while (totalBytesWritten <= length && (len = in.read(buff)) > 0) {
+				pOut.write(buff, 0, len);
+				totalBytesWritten += len;
+			}
+
+		} finally {
+			// Clearing buffer
+			Arrays.fill(buff, (byte) 0);
+			// Closing inputstream
+			in.close();
+		}
+	}
 
 }
